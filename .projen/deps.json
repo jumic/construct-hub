@@ -48,6 +48,10 @@
       "type": "build"
     },
     {
+      "name": "glob",
+      "type": "build"
+    },
+    {
       "name": "jest",
       "type": "build"
     },
@@ -74,6 +78,14 @@
     },
     {
       "name": "json-schema",
+      "type": "build"
+    },
+    {
+      "name": "pascal-case",
+      "type": "build"
+    },
+    {
+      "name": "pascal-case",
       "type": "build"
     },
     {
