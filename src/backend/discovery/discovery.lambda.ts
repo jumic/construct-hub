@@ -276,28 +276,20 @@ function getRelevantVersionInfos(changes: readonly Change[]): readonly UpdatedVe
       continue;
     }
 
-    // Get the last modification date from the change
-    const sortedUpdates = Object.entries(change.doc.time)
-      // Ignore the "created" and "modified" keys here
-      .filter(([key]) => key !== 'created' && key !== 'modified')
-      // Parse all the dates to ensure they are comparable
-      .map(([version, isoDate]) => [version, new Date(isoDate)] as const)
-      // Sort by date, descending
-      .sort(([, l], [, r]) => r.getTime() - l.getTime());
+    for (const [version, modified] of Object.entries(change.doc.time)) {
+      // Ignore the "created" and "modified" keys in the `time` object.
+      if (version === 'created' || version === 'modified') {
+        continue;
+      }
 
-    let latestModified: Date | undefined;
-    for (const [version, modified] of sortedUpdates) {
-      if (latestModified == null || latestModified.getTime() === modified.getTime()) {
-        const infos = change.doc.versions[version];
-        if (infos == null) {
-          // Could be the version in question was un-published.
-          console.log(`[${change.seq}] Could not find info for "${change.doc.name}@${version}". Was it un-published?`);
-        } else if (isRelevantPackageVersion(infos)) {
-          result.push({ infos, modified, seq: change.seq });
-        } else {
-          console.log(`[${change.seq}] Ignoring "${change.doc.name}@${version}" as it is not a construct library.`);
-        }
-        latestModified = modified;
+      const infos = change.doc.versions[version];
+      if (infos == null) {
+        // Could be the version in question was un-published.
+        console.log(`[${change.seq}] Could not find info for "${change.doc.name}@${version}". Was it un-published?`);
+      } else if (isRelevantPackageVersion(infos)) {
+        result.push({ infos, modified: new Date(modified), seq: change.seq });
+      } else {
+        console.log(`[${change.seq}] Ignoring "${change.doc.name}@${version}" as it is not a construct library.`);
       }
     }
   }
@@ -320,7 +312,8 @@ function getRelevantVersionInfos(changes: readonly Change[]): readonly UpdatedVe
   */
 interface VersionInfo {
   readonly devDependencies: { readonly [name: string]: string };
-  readonly dependencies: { readonly [name: string]: string };
+  readonly dependencies: { readonly [name: string]: string; };
+  readonly deprecated?: string;
   readonly jsii: unknown;
   readonly name: string;
   readonly [key: string]: unknown;
