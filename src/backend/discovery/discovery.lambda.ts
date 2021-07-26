@@ -329,26 +329,22 @@ function getRelevantVersionInfos(changes: readonly Change[], metrics: MetricsLog
       .sort(([, l], [, r]) => r.getTime() - l.getTime());
     metrics.putMetric(MetricName.PACKAGE_VERSION_COUNT, sortedUpdates.length, Unit.Count);
 
-    let latestModified: Date | undefined;
     for (const [version, modified] of sortedUpdates) {
-      if (latestModified == null || latestModified.getTime() === modified.getTime()) {
-        const infos = change.doc.versions[version];
-        if (infos == null) {
-          // Could be the version in question was un-published.
-          console.log(`[${change.seq}] Could not find info for "${change.doc.name}@${version}". Was it un-published?`);
-        } else if (isRelevantPackageVersion(infos)) {
-          metrics.putMetric(MetricName.PACKAGE_VERSION_AGE, Date.now() - modified.getTime(), Unit.Milliseconds);
-          const isEligible = usesEligibleLicenses(infos);
-          metrics.putMetric(MetricName.INELIGIBLE_LICENSE, isEligible ? 0 : 1, Unit.Count);
-          if (usesEligibleLicenses(infos)) {
-            result.push({ infos, modified, seq: change.seq });
-          } else {
-            console.log(`[${change.seq}] Package "${change.doc.name}@${version}" does not use allow-listed license: ${infos.license ?? 'UNLICENSED'}`);
-          }
+      const infos = change.doc.versions[version];
+      if (infos == null) {
+        // Could be the version in question was un-published.
+        console.log(`[${change.seq}] Could not find info for "${change.doc.name}@${version}". Was it un-published?`);
+      } else if (isRelevantPackageVersion(infos)) {
+        metrics.putMetric(MetricName.PACKAGE_VERSION_AGE, Date.now() - modified.getTime(), Unit.Milliseconds);
+        const isEligible = usesEligibleLicenses(infos);
+        metrics.putMetric(MetricName.INELIGIBLE_LICENSE, isEligible ? 0 : 1, Unit.Count);
+        if (usesEligibleLicenses(infos)) {
+          result.push({ infos, modified, seq: change.seq });
         } else {
-          console.log(`[${change.seq}] Ignoring "${change.doc.name}@${version}" as it is not a construct library.`);
+          console.log(`[${change.seq}] Package "${change.doc.name}@${version}" does not use allow-listed license: ${infos.license ?? 'UNLICENSED'}`);
         }
-        latestModified = modified;
+      } else {
+        console.log(`[${change.seq}] Ignoring "${change.doc.name}@${version}" as it is not a construct library.`);
       }
     }
   }
